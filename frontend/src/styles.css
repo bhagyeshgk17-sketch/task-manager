@@ -1,0 +1,63 @@
+/* ── CSS Custom Properties ── */
+:root {
+  --bg-primary:    #f9fafb;
+  --bg-secondary:  #f3f4f6;
+  --bg-card:       #ffffff;
+  --text-primary:  #111827;
+  --text-secondary:#374151;
+  --text-muted:    #6b7280;
+  --border-color:  #e5e7eb;
+  --shadow:        rgba(0, 0, 0, 0.08);
+  --accent-color:  #3b82f6;
+  --success:       #22c55e;
+  --warning:       #f97316;
+  --danger:        #ef4444;
+
+  /* Toast */
+  --toast-success-bg:    #f0fdf4;
+  --toast-success-color: #15803d;
+  --toast-error-bg:      #fef2f2;
+  --toast-error-color:   #b91c1c;
+  --toast-info-bg:       #eff6ff;
+  --toast-info-color:    #1d4ed8;
+}
+
+html.dark {
+  --bg-primary:    #0f172a;
+  --bg-secondary:  #1e293b;
+  --bg-card:       #1e293b;
+  --text-primary:  #f1f5f9;
+  --text-secondary:#cbd5e1;
+  --text-muted:    #94a3b8;
+  --border-color:  #334155;
+  --shadow:        rgba(0, 0, 0, 0.3);
+  --accent-color:  #3b82f6;
+  --success:       #22c55e;
+  --warning:       #f97316;
+  --danger:        #ef4444;
+
+  /* Toast */
+  --toast-success-bg:    #14532d;
+  --toast-success-color: #4ade80;
+  --toast-error-bg:      #450a0a;
+  --toast-error-color:   #f87171;
+  --toast-info-bg:       #1e3a5f;
+  --toast-info-color:    #93c5fd;
+}
+
+/* ── Smooth theme transitions ── */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* ── Base reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}

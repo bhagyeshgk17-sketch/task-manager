@@ -1,0 +1,459 @@
+# =============================================================================
+# Task Manager API — REST Client Test File
+# =============================================================================
+#
+# HOW TO USE:
+#   1. Run "Register" or "Login" first
+#   2. Copy the accessToken from the response body
+#   3. Paste it into @token below
+#   4. Copy the refreshToken and paste it into @refreshToken
+#   5. After creating a task, copy its id into @taskId
+#   6. After creating a label, copy its id into @labelId
+#   7. Run requests in order from top to bottom
+#
+# =============================================================================
+
+@baseUrl = http://localhost:3000
+
+# STEP 1: Run the login request first, then copy the accessToken from
+# the response and paste it here
+@token = PASTE_ACCESS_TOKEN_HERE
+
+@refreshToken = PASTE_REFRESH_TOKEN_HERE
+@taskId = PASTE_TASK_ID_HERE
+@labelId = PASTE_LABEL_ID_HERE
+
+
+# =============================================================================
+# AUTH
+# =============================================================================
+
+### Register a new user
+# POST /auth/register
+# Expected: 201 Created
+# Returns: accessToken, refreshToken, user object
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "password": "password123"
+}
+
+###
+
+### Login — copy the accessToken from the response into @token above
+# POST /auth/login
+# Expected: 200 OK
+# Returns: accessToken, refreshToken, user object
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane@example.com",
+  "password": "password123"
+}
+
+
+# =============================================================================
+# USERS
+# =============================================================================
+
+###
+
+### Get the logged-in user's profile
+# GET /users/profile
+# Expected: 200 OK
+# Returns: id, name, email, createdAt (no password)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{token}}
+
+###
+
+### Update the logged-in user's display name
+# PATCH /users/profile
+# Expected: 200 OK
+# Returns: updated user profile
+PATCH {{baseUrl}}/users/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Jane Updated"
+}
+
+###
+
+### Change password — access token remains valid but refresh token is cleared
+# PATCH /users/change-password
+# Expected: 200 OK
+# Note: after this you must log in again to get a fresh token
+PATCH {{baseUrl}}/users/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "newpassword456"
+}
+
+
+# =============================================================================
+# LABELS
+# =============================================================================
+
+###
+
+### Create Label 1 — Frontend
+# POST /labels
+# Expected: 201 Created
+# Returns: label object with id — copy the id into @labelId above
+POST {{baseUrl}}/labels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Frontend",
+  "color": "#3B82F6"
+}
+
+###
+
+### Create Label 2 — Backend
+# POST /labels
+# Expected: 201 Created
+# Returns: label object with id
+POST {{baseUrl}}/labels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Backend",
+  "color": "#10B981"
+}
+
+###
+
+### Get all labels belonging to the logged-in user
+# GET /labels
+# Expected: 200 OK
+# Returns: array of all labels for this user
+GET {{baseUrl}}/labels
+Authorization: Bearer {{token}}
+
+###
+
+### Update a label's color — paste a label id into @labelId at the top
+# PATCH /labels/:id
+# Expected: 200 OK
+# Returns: updated label object
+PATCH {{baseUrl}}/labels/{{labelId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "color": "#6366F1"
+}
+
+
+# =============================================================================
+# TASKS — Create
+# =============================================================================
+
+###
+
+### Create Task 1 — TODO status, HIGH priority, due date tomorrow
+# POST /tasks
+# Expected: 201 Created
+# Returns: task object with labels array — copy the id into @taskId above
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Design landing page",
+  "description": "Create wireframes and mockups for the new landing page",
+  "priority": "HIGH",
+  "dueDate": "2026-03-28"
+}
+
+###
+
+### Create Task 2 — will be patched to IN_PROGRESS, MEDIUM priority, no due date
+# POST /tasks
+# Expected: 201 Created
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Fix login bug",
+  "description": "Users are being logged out unexpectedly after 5 minutes",
+  "priority": "MEDIUM"
+}
+
+###
+
+### Create Task 3 — will be patched to DONE, LOW priority, past due date (tests overdue logic)
+# POST /tasks
+# Expected: 201 Created
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Write API documentation",
+  "description": "Document all endpoints using OpenAPI spec",
+  "priority": "LOW",
+  "dueDate": "2026-03-22"
+}
+
+###
+
+### Update Task 2 to IN_PROGRESS
+# PATCH /tasks/:id
+# Expected: 200 OK
+# Note: paste Task 2's id here directly (or update @taskId)
+PATCH {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+###
+
+### Update Task 3 to DONE
+# PATCH /tasks/:id
+# Expected: 200 OK
+# Note: paste Task 3's id here directly (or update @taskId)
+PATCH {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "DONE"
+}
+
+
+# =============================================================================
+# TASKS — List & Filter
+# =============================================================================
+
+###
+
+### Get all tasks (default: sorted by createdAt DESC, page 1, limit 10)
+# GET /tasks
+# Expected: 200 OK
+# Returns: { tasks[], total, page, limit, totalPages }
+GET {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+
+###
+
+### Filter tasks by status TODO
+# GET /tasks?status=TODO
+# Expected: 200 OK
+# Returns: only tasks with status TODO
+GET {{baseUrl}}/tasks?status=TODO
+Authorization: Bearer {{token}}
+
+###
+
+### Filter tasks by priority HIGH
+# GET /tasks?priority=HIGH
+# Expected: 200 OK
+# Returns: only tasks with HIGH priority
+GET {{baseUrl}}/tasks?priority=HIGH
+Authorization: Bearer {{token}}
+
+###
+
+### Search tasks by keyword in title and description (ILIKE match)
+# GET /tasks?search=...
+# Expected: 200 OK
+# Returns: tasks whose title or description contains "login"
+GET {{baseUrl}}/tasks?search=login
+Authorization: Bearer {{token}}
+
+###
+
+### Sort tasks by dueDate ascending (nulls will appear last)
+# GET /tasks?sortBy=dueDate&sortOrder=ASC
+# Expected: 200 OK
+# Returns: tasks ordered by dueDate from earliest to latest
+GET {{baseUrl}}/tasks?sortBy=dueDate&sortOrder=ASC
+Authorization: Bearer {{token}}
+
+###
+
+### Pagination — page 1, limit 2
+# GET /tasks?page=1&limit=2
+# Expected: 200 OK
+# Returns: first 2 tasks, totalPages shows how many pages exist
+GET {{baseUrl}}/tasks?page=1&limit=2
+Authorization: Bearer {{token}}
+
+
+# =============================================================================
+# TASKS — Single / Update / Dashboard
+# =============================================================================
+
+###
+
+### Get a single task by id — paste Task 1's id into @taskId above
+# GET /tasks/:id
+# Expected: 200 OK
+# Returns: full task with labels array
+GET {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Update task — change title, lower priority, extend due date
+# PATCH /tasks/:id
+# Expected: 200 OK
+# Returns: updated task object
+PATCH {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Design landing page v2",
+  "priority": "MEDIUM",
+  "dueDate": "2026-05-01"
+}
+
+###
+
+### Get dashboard summary for the logged-in user
+# GET /tasks/dashboard
+# Expected: 200 OK
+# Returns: totalTasks, byStatus, byPriority, overdueCount, dueTodayCount, completionRate
+GET {{baseUrl}}/tasks/dashboard
+Authorization: Bearer {{token}}
+
+
+# =============================================================================
+# AUTH — Token Rotation & Logout
+# =============================================================================
+
+###
+
+### Refresh token — paste the refreshToken from login into @refreshToken above
+# POST /auth/refresh
+# Expected: 200 OK
+# Returns: new accessToken + new refreshToken (old refresh token is now invalid)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+
+### Logout — clears the refresh token from the database
+# POST /auth/logout
+# Expected: 200 OK
+# Note: the access token (JWT) remains valid until it expires in 15 min
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+
+# =============================================================================
+# CLEANUP — Delete
+# =============================================================================
+
+###
+
+### Delete a task — paste the task id into @taskId above
+# DELETE /tasks/:id
+# Expected: 200 OK
+DELETE {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Delete a label — paste the label id into @labelId above
+# DELETE /labels/:id
+# Expected: 200 OK
+DELETE {{baseUrl}}/labels/{{labelId}}
+Authorization: Bearer {{token}}
+
+
+# =============================================================================
+# ERROR CASES — Validate guards and validation pipes
+# =============================================================================
+
+###
+
+### Duplicate email on register — should fail
+# POST /auth/register
+# Expected: 409 Conflict
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Duplicate",
+  "email": "jane@example.com",
+  "password": "password123"
+}
+
+###
+
+### Wrong password on login — should fail
+# POST /auth/login
+# Expected: 401 Unauthorized
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane@example.com",
+  "password": "wrongpassword"
+}
+
+###
+
+### Access protected route without token — should fail
+# GET /users/profile
+# Expected: 401 Unauthorized
+GET {{baseUrl}}/users/profile
+
+###
+
+### Invalid hex color on label creation — should fail
+# POST /labels
+# Expected: 400 Bad Request — color must match ^#[0-9A-Fa-f]{6}$
+POST {{baseUrl}}/labels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Bad Color",
+  "color": "red"
+}
+
+###
+
+### Task with non-existent labelId — should fail
+# POST /tasks
+# Expected: 400 Bad Request
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Task with bad label",
+  "labelIds": ["00000000-0000-0000-0000-000000000000"]
+}
+
+###
+
+### Get task that does not exist — should fail
+# GET /tasks/:id
+# Expected: 404 Not Found
+GET {{baseUrl}}/tasks/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}

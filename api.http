@@ -1,0 +1,329 @@
+@baseUrl = http://localhost:3000
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HOW TO USE
+# 1. Run requests in order — later requests reference earlier responses
+# 2. After "Change Password", run "Re-login" before continuing
+# 3. VS Code REST Client captures responses via # @name; reference them with
+#    {{requestName.response.body.$.path}}
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+###
+# ══════════════════════════════════════════════
+#  AUTH
+# ══════════════════════════════════════════════
+
+### 1. Register
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "password": "password123"
+}
+
+### 2. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane@example.com",
+  "password": "password123"
+}
+
+### 3. Refresh Token  (uses refresh token from login)
+# @name refresh
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.data.refreshToken}}"
+}
+
+### 4. Logout  (uses rotated access token from refresh)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{refresh.response.body.$.data.accessToken}}
+
+
+###
+# ══════════════════════════════════════════════
+#  USERS
+# (access token from login is still valid — JWT not yet expired)
+# ══════════════════════════════════════════════
+
+### 5. Get Profile
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### 6. Update Profile
+PATCH {{baseUrl}}/users/profile
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Jane Updated"
+}
+
+### 7. Change Password  (also clears refresh token — forces re-login)
+PATCH {{baseUrl}}/users/change-password
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "password123",
+  "newPassword": "newpassword456"
+}
+
+### 8. Re-login with new password
+# @name relogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane@example.com",
+  "password": "newpassword456"
+}
+
+
+###
+# ══════════════════════════════════════════════
+#  LABELS
+# ══════════════════════════════════════════════
+
+### 9. Create Label 1 — Frontend
+# @name label1
+POST {{baseUrl}}/labels
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Frontend",
+  "color": "#3B82F6"
+}
+
+### 10. Create Label 2 — Bug
+# @name label2
+POST {{baseUrl}}/labels
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Bug",
+  "color": "#EF4444"
+}
+
+### 11. Get All Labels
+GET {{baseUrl}}/labels
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 12. Update Label 1 — change color
+PATCH {{baseUrl}}/labels/{{label1.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "color": "#6366F1"
+}
+
+### 13. Delete Label 2
+DELETE {{baseUrl}}/labels/{{label2.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+
+###
+# ══════════════════════════════════════════════
+#  TASKS — Create
+# ══════════════════════════════════════════════
+
+### 14. Create Task 1 — TODO / HIGH / with label / future due date
+# @name task1
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Design landing page",
+  "description": "Create wireframes and mockups for the new landing page",
+  "priority": "HIGH",
+  "dueDate": "2026-04-15",
+  "labelIds": ["{{label1.response.body.$.data.id}}"]
+}
+
+### 15. Create Task 2 — TODO / MEDIUM / overdue (past date)
+# @name task2
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Fix login bug",
+  "description": "Users are being logged out unexpectedly after 5 minutes",
+  "priority": "MEDIUM",
+  "dueDate": "2026-03-20"
+}
+
+### 16. Create Task 3 — TODO / LOW / no due date
+# @name task3
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Write API documentation",
+  "description": "Document all endpoints using OpenAPI spec",
+  "priority": "LOW"
+}
+
+### 17. Update Task 2 → IN_PROGRESS
+PATCH {{baseUrl}}/tasks/{{task2.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### 18. Update Task 3 → DONE
+PATCH {{baseUrl}}/tasks/{{task3.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "status": "DONE"
+}
+
+### 19. Assign labels to Task 2
+PATCH {{baseUrl}}/tasks/{{task2.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "labelIds": ["{{label1.response.body.$.data.id}}"]
+}
+
+
+###
+# ══════════════════════════════════════════════
+#  TASKS — Query & Filter
+# ══════════════════════════════════════════════
+
+### 20. Get All Tasks (default sort: createdAt DESC)
+GET {{baseUrl}}/tasks
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 21. Filter by status — TODO only
+GET {{baseUrl}}/tasks?status=TODO
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 22. Filter by priority — HIGH only
+GET {{baseUrl}}/tasks?priority=HIGH
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 23. Search by keyword in title/description
+GET {{baseUrl}}/tasks?search=login
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 24. Filter by label
+GET {{baseUrl}}/tasks?labelId={{label1.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 25. Pagination — page 1, limit 2
+GET {{baseUrl}}/tasks?page=1&limit=2
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 26. Sort by priority DESC
+GET {{baseUrl}}/tasks?sortBy=priority&sortOrder=DESC
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 27. Sort by dueDate ASC
+GET {{baseUrl}}/tasks?sortBy=dueDate&sortOrder=ASC
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 28. Combined filters — IN_PROGRESS + MEDIUM priority
+GET {{baseUrl}}/tasks?status=IN_PROGRESS&priority=MEDIUM
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+
+###
+# ══════════════════════════════════════════════
+#  TASKS — Single / Update / Dashboard / Delete
+# ══════════════════════════════════════════════
+
+### 29. Get Single Task (Task 1 with labels)
+GET {{baseUrl}}/tasks/{{task1.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 30. Update Task 1 — new title, change priority, extend due date
+PATCH {{baseUrl}}/tasks/{{task1.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Design landing page v2",
+  "priority": "MEDIUM",
+  "dueDate": "2026-05-01"
+}
+
+### 31. Dashboard
+GET {{baseUrl}}/tasks/dashboard
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 32. Delete Task 3
+DELETE {{baseUrl}}/tasks/{{task3.response.body.$.data.id}}
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+
+###
+# ══════════════════════════════════════════════
+#  ERROR CASES (optional sanity checks)
+# ══════════════════════════════════════════════
+
+### 33. Register with duplicate email → 409
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Duplicate",
+  "email": "jane@example.com",
+  "password": "password123"
+}
+
+### 34. Login with wrong password → 401
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane@example.com",
+  "password": "wrongpassword"
+}
+
+### 35. Access protected route without token → 401
+GET {{baseUrl}}/users/profile
+
+### 36. Get task that belongs to another user → 404/403
+GET {{baseUrl}}/tasks/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+
+### 37. Create label with invalid hex color → 400
+POST {{baseUrl}}/labels
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Bad Color",
+  "color": "red"
+}
+
+### 38. Create task with invalid labelId → 400
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{relogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Task with bad label",
+  "labelIds": ["00000000-0000-0000-0000-000000000000"]
+}
