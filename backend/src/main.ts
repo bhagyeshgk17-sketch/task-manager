@@ -15,7 +15,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:4200',
-      process.env.FRONTEND_URL || '*',
+      'https://task-manager-chi-gray.vercel.app',
     ],
     credentials: true,
   });
